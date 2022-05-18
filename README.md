@@ -53,3 +53,8 @@ So test it before you point it to your main collection!
   - make sure you favor default tracks in your player or remove any setup languages preferences
 - `SUBTITLE_MODE = ['default','forced']` This sets both flags on the picked subtitle track, this should work on all players.
 - `AUDIO_MODE = ['default','disable']` This hides all none picked audio tracks, "may" work in cases where the player stubbornly refuses to pick the default/forced track. At least works if LAV filters are used with default settings, other players may choose to ignore the 'enabled' flag!
+
+### Note on the settings.rb
+- the heuristic array entries all look like this `['name' => value]` you can move the entries around or change the value similar to Sonarr/Profile preferred entries!
+- the name values are just simple strings, so no RegEx is supported as of now!
+- you should always value languages much higher aka 100+, while codec, filters can be adapted to your liking
