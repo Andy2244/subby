@@ -12,7 +12,7 @@ So test it before you point it to your main collection!
 
 # Requirements
 1. mkvpropedit via https://mkvtoolnix.download/downloads.html
-   - put `mkvpropedit` in the script dir or search PATH variable
+   - put `mkvpropedit`, `mkvmerge` in the script dir or search PATH variable
 3. Ruby script interpreter
    - https://rubyinstaller.org
    - https://www.ruby-lang.org/en/downloads/
