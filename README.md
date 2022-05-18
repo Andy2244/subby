@@ -4,7 +4,7 @@ The main usecase is to flag Anime, foreign content so the prefered audio/subtitl
 Most video players, Media Centers have too basic options to handle complexer cases, thats where "subby" comes in!
 
 ### Disclaimer
-The script itself has no delete/remux logic and will change the actual streams in any way, so should be safe to use.
+The script itself has no delete/remux logic and will not change the actual streams in any way, so should be safe to use.
 I tested it with ~1000 files and had no issues.
 What you may loose is the original 'default', 'forced' flag settings, since thats what the script will change, operates on.
 So test it before you point it to your main collection!
