@@ -43,10 +43,10 @@ So test it before you point it to your main collection!
 - can operate in multiple audio/subtitle modes ('default', 'forced', 'disable', 'enable')
 
 ### Note on mkv Flags and operation modes: *settings.rb (AUDIO_MODE, SUBTITLE_MODE)*
-- 'default' = "many" players will pick 'default' flagged tracks by default, if there are no other user settings in place that overrides this
-- 'forced'  = nearly all players will honor 'forced' subtitles tracks, while some may also favor 'forced' audio tracks
-- 'disable' = disables the track, making it "invisible" to some players *(LAV filters work)* Note: The track is still there, just hidden!
-- 'enable'  = re/enables all tracks, used to revert 'disable' changes
+- `'default'` = "many" players will pick 'default' flagged tracks by default, if there are no other user settings in place that overrides this
+- `'forced'`  = nearly all players will honor 'forced' subtitles tracks, while some may also favor 'forced' audio tracks
+- `'disable'` = disables the track, making it "invisible" to some players *(LAV filters work)* Note: The track is still there, just hidden!
+- `'enable'`  = re/enables all tracks, used to revert 'disable' changes
 
 ## Recommendations
 - `AUDIO_MODE = ['default']` This is a good starting point for audio tracks, see if you player correctly picks the new set default track
