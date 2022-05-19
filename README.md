@@ -18,7 +18,8 @@ So test it before you point it to your main collection!
    - https://www.ruby-lang.org/en/downloads/
    - via https://chocolatey.org `choco install ruby`
 
-# Useage via commandline *(NOTE: double click on the `stubby.rb` file should also work, after you add a directory to `settings.rb`)*
+## Useage via commandline
+*(NOTE: double click on the `subby.rb` file should also work, after you add a directory to `settings.rb`)*
 - `ruby subby.rb`
 - `rubyw subby.rb` without cmd prompt on windows
 - edit the `settings.rb` file to your liking!
@@ -40,13 +41,14 @@ So test it before you point it to your main collection!
 - allows filtering via track name words *(signs, sdh....)* to improve matching
 - can setup multiple directory paths to operate on
   - can directly work on network paths
-- can operate in multiple audio/subtitle modes ('default', 'forced', 'disable', 'enable')
+- can operate in multiple audio/subtitle modes ('default', 'forced', 'disable', 'enable', 'forced_clean')
 
 ### Note on mkv Flags and operation modes: *settings.rb (AUDIO_MODE, SUBTITLE_MODE)*
-- `'default'` = "many" players will pick 'default' flagged tracks by default, if there are no other user settings in place that overrides this
-- `'forced'`  = nearly all players will honor 'forced' subtitles tracks, while some may also favor 'forced' audio tracks
+- `'default'` = "many" players will pick 'default' flagged tracks by default, if there are no other user settings in place that overrides this. Ensures only one track per type has the default flag.
+- `'forced'`  = nearly all players will honor 'forced' subtitles tracks, while some may also favor 'forced' audio tracks. Ensures only one track per type has the forced flag.
 - `'disable'` = disables the track, making it "invisible" to some players *(LAV filters work)* Note: The track is still there, just hidden!
 - `'enable'`  = re/enables all tracks, used to revert 'disable' changes
+- `'forced_clean'` = (subtitle only) clears ALL forced flags from subtitle tracks, useful to strip incorrect forced flags. Cannot be combined with 'forced'.
 
 ## Recommendations
 - `AUDIO_MODE = ['default']` This is a good starting point for audio tracks, see if you player correctly picks the new set default track

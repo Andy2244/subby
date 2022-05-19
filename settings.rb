@@ -4,6 +4,7 @@
 # process all MKVs in those directory's and all sub-directory's NOTE: use / instead of \ , also dont forget the ',' at the end!
 FILES_DIRS = [
   # 'd:/my_anime',
+  # 'z:/GitHub/subby',
 
   # can work with direct network paths
   #'//servername_or_ip/smb_sharename/foldername',
@@ -13,8 +14,10 @@ FILES_DIRS = [
 # Set a operation mode or multiple (disable = will disable the track, making it invisible to supported players, enable = reverts this)
 # Audio Operation-Mode 'default','forced','disable','enable'
 AUDIO_MODE = ['default']
-# Subtitle Operation-Mode 'default','forced' NOTE: we dont support enable/disable sub tracks as of right now
-SUBTITLE_MODE = ['default','forced']
+# Subtitle Operation-Mode 'default','forced','forced_clean' NOTE: we dont support enable/disable sub tracks as of right now
+# 'forced_clean' = explicitly clear ALL forced flags from subtitle tracks
+SUBTITLE_MODE = ['default']
+# SUBTITLE_MODE = ['default','forced_clean']
 
 # Languages settings use only 3 letter ISO codes! https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 # what languages you speak natively, can have multiple ['eng','spa','ger']
@@ -62,6 +65,7 @@ TRACK_FILTERS = {
   'sing' => -200,
   'song' => -200,
   'shd' => -200,
+  'sdh' => -200,
 }
 # preferred subtitle codec, here we prefer ASS
 SUBTITLE_CODECS = {

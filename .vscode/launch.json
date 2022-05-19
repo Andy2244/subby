@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run subby.rb",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "ruby ${workspaceFolder}/subby.rb",
+      "cwd": "${workspaceFolder}",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}

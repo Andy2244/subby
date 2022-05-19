@@ -11,7 +11,12 @@ def identify_file(file_name)
     file.puts JSON.dump(['--identification-format', 'json', '--identify', file_name])
     file.close
 
-    return JSON.parse(`mkvmerge @#{file.path}`)
+    output = `mkvmerge @#{file.path} 2>&1`
+    return JSON.parse(output)
+  rescue JSON::ParserError
+    puts "WARNING: mkvmerge failed for: #{file_name}"
+    puts "  output: #{output.to_s.lines.first&.chomp}" unless output.to_s.empty?
+    return nil
   end
 end
 
@@ -29,6 +34,6 @@ def edit_file_properties(arguments)
     file.puts JSON.dump(arguments)
     file.close
 
-    system "mkvpropedit @#{file.path}"
+    system "mkvpropedit @#{file.path}", [:out, :err] => File::NULL
   end
 end
