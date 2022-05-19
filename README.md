@@ -18,7 +18,7 @@ So test it before you point it to your main collection!
    - https://www.ruby-lang.org/en/downloads/
    - via https://chocolatey.org `choco install ruby`
 
-# Useage via commandline
+# Useage via commandline *(NOTE: double click on the `stubby.rb` file should also work, after you add a directory to `settings.rb`)*
 - `ruby subby.rb`
 - `rubyw subby.rb` without cmd prompt on windows
 - edit the `settings.rb` file to your liking!
