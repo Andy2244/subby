@@ -1,6 +1,24 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+$log_dir = __dir__
+
+$stdout.sync = true
+if Gem.win_platform?
+  $stdout.set_encoding('UTF-8')
+  $stderr.set_encoding('UTF-8')
+  system 'chcp 65001 > NUL 2>&1'
+end
+
+at_exit do
+  if $! && !$!.is_a?(SystemExit)
+    puts "\nERROR: #{$!.class}: #{$!.message}"
+    puts $!.backtrace&.first(3)&.join("\n")
+    puts "\nPress Enter to close..."
+    $stdin.gets
+  end
+end
+
 require_relative 'mtxlib'
 require_relative 'settings'
 
@@ -32,6 +50,9 @@ end
 if SUBTITLE_MODE.include?('forced') && SUBTITLE_MODE.include?('forced_clean')
   abort('ABORTED! SUBTITLE_MODE cant use forced + forced_clean, simultaneously !')
 end
+
+puts "%-12s %s" % ["[changes]", "file"]
+puts "-" * 40
 
 FILES_DIRS.each do |in_dir|
   next unless File.directory?(in_dir)
@@ -194,14 +215,23 @@ FILES_DIRS.each do |in_dir|
 
     edit_file_properties [in_file] + arguments
     tags = [changed_audio ? 'audio' : nil, changed_sub ? 'sub' : nil].compact.join('+')
-    puts "\u2714 #{in_file} [#{tags}]"
-    File.write("_files_changed_#{TIMESTAMP}.log", "#{in_file} [#{tags}]\n", mode: 'a')
+    puts "%-12s %s" % ["[#{tags}]", in_file]
+    begin
+      File.write(File.join($log_dir, "subby_#{TIMESTAMP}.log"), "%-12s %s\n" % ["[#{tags}]", in_file], mode: 'a')
+    rescue Errno::EACCES
+      $log_dir = Dir.home
+      retry
+    end
     did_change = true
   end
 end
 
+print "\r#{' ' * 40}\r"
+puts "-" * 40
 puts "scanned #{file_count} files"
 if did_change
-  puts "Logfile written inside the script dir: <_files_changed_#{TIMESTAMP}.log>"
+  puts "Logfile: #{File.join($log_dir, "subby_#{TIMESTAMP}.log")}"
+  puts "\nPress Enter to close..."
+  $stdin.gets
 end
 exit(true)
