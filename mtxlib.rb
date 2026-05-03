@@ -7,6 +7,7 @@ require 'json'
 require 'tempfile'
 
 def identify_file(file_name)
+  output = nil
   Tempfile.create(%w[mkvmerge-arguments .json], nil, encoding: 'utf-8') do |file|
     file.puts JSON.dump(['--identification-format', 'json', '--identify', file_name])
     file.close
@@ -14,9 +15,7 @@ def identify_file(file_name)
     output = `mkvmerge @#{file.path} 2>&1`
     return JSON.parse(output)
   rescue JSON::ParserError
-    puts "WARNING: mkvmerge failed for: #{file_name}"
-    puts "  output: #{output.to_s.lines.first&.chomp}" unless output.to_s.empty?
-    return nil
+    return [:error, output.to_s.lines.first&.chomp]
   end
 end
 

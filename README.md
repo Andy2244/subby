@@ -42,6 +42,10 @@ So test it before you point it to your main collection!
 - can setup multiple directory paths to operate on
   - can directly work on network paths
 - can operate in multiple audio/subtitle modes ('default', 'forced', 'disable', 'enable', 'forced_clean')
+- can analyse multiple files in parallel for faster scans on slow disks/network shares
+  - `PARALLEL_ANALYSIS = 2` *(default, good for HDD)*, bump to `3` or `4` for SSD / NAS / SMB, set to `1` for sequential
+- caches scan results in `~/.subby/subby_cache.json` so re-runs are near-instant for unchanged files *(`~` = your OS user home dir; log files live there too)*
+  - set `USE_CACHE = false` in `settings.rb` to disable, or delete the cache file to force a full re-scan
 
 ### Note on mkv Flags and operation modes: *settings.rb (AUDIO_MODE, SUBTITLE_MODE)*
 - `'default'` = "many" players will pick 'default' flagged tracks by default, if there are no other user settings in place that overrides this. Ensures only one track per type has the default flag.

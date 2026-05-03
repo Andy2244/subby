@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-$log_dir = __dir__
+require 'fileutils'
+$log_dir = File.join(Dir.home, '.subby')
+FileUtils.mkdir_p($log_dir)
 
 $stdout.sync = true
 if Gem.win_platform?
@@ -10,16 +12,20 @@ if Gem.win_platform?
   system 'chcp 65001 > NUL 2>&1'
 end
 
+$cache = nil
+$cache_path = nil
+$cache_dirty = false
+
 at_exit do
+  cache_save($cache, $cache_path) if $cache && $cache_path && $cache_dirty
   if $! && !$!.is_a?(SystemExit)
     puts "\nERROR: #{$!.class}: #{$!.message}"
     puts $!.backtrace&.first(3)&.join("\n")
-    puts "\nPress Enter to close..."
-    $stdin.gets
   end
 end
 
 require_relative 'mtxlib'
+require_relative 'mtxcache'
 require_relative 'settings'
 
 AUDIO_LANGUAGES.default = 0
@@ -54,22 +60,38 @@ end
 puts "%-12s %s" % ["[changes]", "file"]
 puts "-" * 40
 
+$cache_path = USE_CACHE ? File.join($log_dir, 'subby_cache.json') : nil
+$cache = USE_CACHE ? cache_load($cache_path) : { 'version' => CACHE_VERSION, 'entries' => {} }
+if USE_CACHE
+  puts "cache: #{$cache_path} (#{$cache['entries'].length} entries loaded)"
+else
+  puts "cache: disabled (USE_CACHE = false)"
+end
+
+# collect full file list once, then identify in parallel via worker pool
+mkv_files = []
 FILES_DIRS.each do |in_dir|
   next unless File.directory?(in_dir)
+  Dir["#{in_dir}/**/*.mkv"].each do |f|
+    mkv_files << File.expand_path(f) if File.file?(f)
+  end
+end
+mkv_files.uniq!
+total_files = mkv_files.length
 
-  Dir["#{in_dir}/**/*.mkv"].each do |in_file|
-    next unless File.file?(in_file)
+# process one identified file: scoring + mkvpropedit + log. runs in main thread only
+process_file = lambda do |in_file, json|
+  if json.is_a?(Array) && json[0] == :error
+    puts "WARNING: mkvmerge failed for: #{in_file}"
+    puts "  output: #{json[1]}" if json[1] && !json[1].empty?
+    return
+  end
+  unless json.is_a?(Hash) && json['tracks'].is_a?(Array)
+    puts "SKIPPING (no track data): #{in_file}"
+    return
+  end
 
-    file_count += 1
-    print "scanning files: #{file_count}\r"
-
-    json = identify_file in_file
-    unless json.is_a?(Hash) && json['tracks'].is_a?(Array)
-      puts "SKIPPING (no track data): #{in_file}"
-      next
-    end
-
-    arguments = []
+  arguments = []
 
     # internal
     _audio_tracks = Array.new(0) { Array.new(0) }
@@ -213,16 +235,90 @@ FILES_DIRS.each do |in_dir|
     # process arguments and write the actual changes
     next if arguments.empty?
 
-    edit_file_properties [in_file] + arguments
-    tags = [changed_audio ? 'audio' : nil, changed_sub ? 'sub' : nil].compact.join('+')
-    puts "%-12s %s" % ["[#{tags}]", in_file]
-    begin
-      File.write(File.join($log_dir, "subby_#{TIMESTAMP}.log"), "%-12s %s\n" % ["[#{tags}]", in_file], mode: 'a')
-    rescue Errno::EACCES
-      $log_dir = Dir.home
-      retry
+  # invalidate before the edit attempt so a Ctrl-C/exception during mkvpropedit
+  # can't leave a stale pre-edit entry that at_exit would persist. mkvpropedit only
+  # rewrites header bytes, so mtime/size stay the same and we can't rely on the
+  # next run's stat check to catch it.
+  cache_invalidate($cache, in_file) if USE_CACHE
+  edit_file_properties [in_file] + arguments
+  tags = [changed_audio ? 'audio' : nil, changed_sub ? 'sub' : nil].compact.join('+')
+  puts "%-12s %s" % ["[#{tags}]", in_file]
+  File.write(File.join($log_dir, "subby_#{TIMESTAMP}.log"), "%-12s %s\n" % ["[#{tags}]", in_file], mode: 'a')
+  did_change = true
+end
+
+# split into cache hits (instant, no mkvmerge) and misses (route through identify)
+cache_hits = []
+cache_misses = []
+mkv_files.each do |f|
+  if USE_CACHE && (json = cache_get($cache, f))
+    cache_hits << [f, json]
+  else
+    cache_misses << f
+  end
+end
+
+# process cache hits immediately on the main thread
+cache_hits.each do |in_file, json|
+  file_count += 1
+  print "scanning files: #{file_count}/#{total_files}\r"
+  process_file.call(in_file, json)
+end
+
+worker_count = [[PARALLEL_ANALYSIS.to_i, 1].max, [cache_misses.length, 1].max].min
+
+if cache_misses.empty?
+  # all hits, nothing to identify
+elsif worker_count <= 1
+  # sequential path (original behavior, no thread overhead)
+  cache_misses.each do |in_file|
+    file_count += 1
+    print "scanning files: #{file_count}/#{total_files}\r"
+    pre_stat = USE_CACHE ? (File.stat(in_file) rescue nil) : nil
+    json = identify_file(in_file)
+    cache_put($cache, in_file, json, pre_stat) if USE_CACHE && pre_stat && json.is_a?(Hash) && json['tracks'].is_a?(Array)
+    process_file.call(in_file, json)
+  end
+else
+  # parallel: N workers run identify_file concurrently, main thread consumes results serially
+  require 'thread'
+  in_queue = Queue.new
+  out_queue = Queue.new
+  cache_misses.each { |f| in_queue << f }
+  worker_count.times { in_queue << :stop }
+
+  Array.new(worker_count) do
+    Thread.new do
+      begin
+        loop do
+          item = in_queue.pop
+          break if item == :stop
+          begin
+            pre_stat = USE_CACHE ? (File.stat(item) rescue nil) : nil
+            json = identify_file(item)
+            out_queue << [:result, item, json, pre_stat]
+          rescue StandardError => e
+            out_queue << [:result, item, [:error, "#{e.class}: #{e.message}"], nil]
+          end
+        end
+      ensure
+        out_queue << :worker_done
+      end
     end
-    did_change = true
+  end
+
+  workers_alive = worker_count
+  while workers_alive > 0
+    msg = out_queue.pop
+    if msg == :worker_done
+      workers_alive -= 1
+      next
+    end
+    _tag, in_file, json, pre_stat = msg
+    file_count += 1
+    print "scanning files: #{file_count}/#{total_files}\r"
+    cache_put($cache, in_file, json, pre_stat) if USE_CACHE && pre_stat && json.is_a?(Hash) && json['tracks'].is_a?(Array)
+    process_file.call(in_file, json)
   end
 end
 
@@ -231,7 +327,5 @@ puts "-" * 40
 puts "scanned #{file_count} files"
 if did_change
   puts "Logfile: #{File.join($log_dir, "subby_#{TIMESTAMP}.log")}"
-  puts "\nPress Enter to close..."
-  $stdin.gets
 end
 exit(true)

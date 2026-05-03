@@ -73,3 +73,12 @@ SUBTITLE_CODECS = {
   'SubRip/SRT' => 1,
   'HDMV PGS' => 0,
 }
+
+# how many files to analyse (mkvmerge --identify) in parallel
+# 1 = sequential (original behavior), 2 = safe default for single HDD,
+# 3-4 = bump for SSD / NAS / SMB shares where per-request latency dominates
+PARALLEL_ANALYSIS = 2
+
+# cache mkvmerge --identify results in subby_cache.json so re-runs skip files that haven't changed
+# true = on (recommended), false = always re-identify every file (no cache file written)
+USE_CACHE = true
