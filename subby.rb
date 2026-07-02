@@ -28,6 +28,10 @@ require_relative 'mtxlib'
 require_relative 'mtxcache'
 require_relative 'settings'
 
+# defaults for settings.rb files predating these
+SDH_FLAG_PENALTY = -200 unless defined?(SDH_FLAG_PENALTY)
+SUBTITLE_TRACK_FILTERS = {} unless defined?(SUBTITLE_TRACK_FILTERS)
+
 AUDIO_LANGUAGES.default = 0
 AUDIO_CODECS.default = 0
 AUDIO_CHANNELS.default = 0
@@ -110,15 +114,19 @@ process_file = lambda do |in_file, json|
             value_sum += value if in_track['properties']['track_name'].downcase.include?(key)
           end
         end
+        # existing default flag only breaks ties (fractional) -> repeat runs stay stable
+        value_sum += 0.5 if in_track['properties']['default_track']
         _audio_tracks.push([value_sum, in_track])
       when 'subtitles'
         value_sum += SUBTITLE_LANGUAGES[in_track['properties']['language']]
         value_sum += SUBTITLE_CODECS[in_track['codec']]
         if in_track['properties']['track_name']
-          TRACK_FILTERS.each do |key, value|
+          TRACK_FILTERS.merge(SUBTITLE_TRACK_FILTERS).each do |key, value|
             value_sum += value if in_track['properties']['track_name'].downcase.include?(key)
           end
         end
+        value_sum += SDH_FLAG_PENALTY if in_track['properties']['flag_hearing_impaired']
+        value_sum += 0.5 if in_track['properties']['default_track']
         _subtitle_tracks.push([value_sum, in_track])
       else
         # type code here

@@ -67,6 +67,14 @@ TRACK_FILTERS = {
   'shd' => -200,
   'sdh' => -200,
 }
+# subtitle-only name filters (would misfire on audio names like "English (Forced)" or "Commentary (CC)")
+SUBTITLE_TRACK_FILTERS = {
+  'forced' => -200,     # "Forced" named subs are signs/songs-only
+  'dubtitle' => -50,    # follows the dub script, not a real translation
+  '(cc)' => -200,       # closed captions = SDH-like, flag often unset
+}
+# penalty for subtitle tracks carrying the mkv hearing-impaired flag (catches SDH tracks not named "sdh")
+SDH_FLAG_PENALTY = -200
 # preferred subtitle codec, here we prefer ASS
 SUBTITLE_CODECS = {
   'SubStationAlpha' => 2,
