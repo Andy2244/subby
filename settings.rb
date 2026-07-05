@@ -51,6 +51,7 @@ AUDIO_CHANNELS = {
 # your preferred subtitle languages, 'und' means undefined and can help on bad tagged files
 SUBTITLE_LANGUAGES = {
   'eng' => 100,
+  'enm' => 100, # fansub honorifics tag, still English
   'und' => 30,
   'ger' => 10,
 }
@@ -75,6 +76,8 @@ SUBTITLE_TRACK_FILTERS = {
 }
 # penalty for subtitle tracks carrying the mkv hearing-impaired flag (catches SDH tracks not named "sdh")
 SDH_FLAG_PENALTY = -200
+# prefer honorifics subs (title says "Honorifics" or the 'enm' language tag); beats name bonuses, stays below the -199/-200 penalties
+HONORIFIC_BONUS = 25
 # preferred subtitle codec, here we prefer ASS
 SUBTITLE_CODECS = {
   'SubStationAlpha' => 2,

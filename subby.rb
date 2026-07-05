@@ -31,6 +31,7 @@ require_relative 'settings'
 # defaults for settings.rb files predating these
 SDH_FLAG_PENALTY = -200 unless defined?(SDH_FLAG_PENALTY)
 SUBTITLE_TRACK_FILTERS = {} unless defined?(SUBTITLE_TRACK_FILTERS)
+HONORIFIC_BONUS = 25 unless defined?(HONORIFIC_BONUS)
 
 AUDIO_LANGUAGES.default = 0
 AUDIO_CODECS.default = 0
@@ -124,6 +125,12 @@ process_file = lambda do |in_file, json|
           TRACK_FILTERS.merge(SUBTITLE_TRACK_FILTERS).each do |key, value|
             value_sum += value if in_track['properties']['track_name'].downcase.include?(key)
           end
+        end
+        # prefer honorifics subs, but never boost an explicit "Non-Honorifics" track (its name also matches)
+        # strip separators so "non-honorific"/"non_honorific"/"non honorifics" all normalize
+        flat = in_track['properties']['track_name'].to_s.downcase.gsub(/[^a-z]/, '')
+        unless flat.include?('nonhonorific')
+          value_sum += HONORIFIC_BONUS if flat.include?('honorific') || in_track['properties']['language'] == 'enm'
         end
         value_sum += SDH_FLAG_PENALTY if in_track['properties']['flag_hearing_impaired']
         value_sum += 0.5 if in_track['properties']['default_track']
