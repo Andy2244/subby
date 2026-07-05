@@ -133,9 +133,10 @@ process_file = lambda do |in_file, json|
       end
     end
 
-    # sort value arrays, best is at [0]
-    _audio_tracks = _audio_tracks.sort_by { |key, value| key }.reverse!
-    _subtitle_tracks = _subtitle_tracks.sort_by { |key, value| key }.reverse!
+    # sort value arrays, best is at [0]; index tie-break keeps mux order on equal
+    # scores (Ruby sort is not stable -- sort-then-reverse once flagged a commentary track)
+    _audio_tracks = _audio_tracks.each_with_index.sort_by { |(key, _track), index| [-key, index] }.map(&:first)
+    _subtitle_tracks = _subtitle_tracks.each_with_index.sort_by { |(key, _track), index| [-key, index] }.map(&:first)
 
     audio_args_before = arguments.length
     # set audio default: flag winner, clear all others
